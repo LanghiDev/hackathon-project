@@ -18,8 +18,11 @@ from django.contrib import admin
 from django.urls import path, include
 
 from backend.core.api import router
+from backend.core.views import CustomerLoginView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/auth/login/', CustomerLoginView.as_view(), name='customer-login'),
+    path('api-auth/', include('rest_framework.urls')),
     path('api/', include(router.urls)),
 ]
