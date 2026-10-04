@@ -1,0 +1,54 @@
+"""Terminal chat: log in as a customer, then ask about your money.
+
+    python cli.py           # chat
+    python cli.py --debug   # also print every message (tool calls and results)
+"""
+
+import sys
+import uuid
+
+from langchain_core.messages import HumanMessage
+from langgraph.errors import GraphRecursionError
+
+import config
+from api_client import LoginError, login
+from graph import build_graph, run_config
+
+EXIT_WORDS = {"sair", "exit", "quit", "salir"}
+
+
+def main():
+    debug = "--debug" in sys.argv
+    print(f"Assistente financeiro ({config.MODEL}) - digite 'sair' para encerrar.\n")
+    try:
+        session = login(input("Documento: ").strip(), input("Data de nascimento (AAAA-MM-DD): ").strip())
+    except LoginError as exc:
+        print(exc)
+        return
+
+    graph = build_graph()
+    cfg = run_config(session["access"], thread_id=str(uuid.uuid4()))
+    print(f"\nOlá, {session['first_name']}! Como posso ajudar?\n")
+
+    while True:
+        try:
+            question = input("Você: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            break
+        if not question:
+            continue
+        if question.lower() in EXIT_WORDS:
+            break
+        try:
+            result = graph.invoke({"messages": [HumanMessage(question)]}, cfg)
+        except GraphRecursionError:
+            print("Assistente: Não consegui concluir essa pergunta. Pode reformular?\n")
+            continue
+        if debug:
+            for message in result["messages"]:
+                message.pretty_print()
+        print(f"Assistente: {result['messages'][-1].text}\n")
+
+
+if __name__ == "__main__":
+    main()
