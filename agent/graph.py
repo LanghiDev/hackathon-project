@@ -9,6 +9,7 @@ When the LLM answers without asking for tools, the graph ends.
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import SystemMessage
+from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.graph import START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -28,8 +29,12 @@ def build_llm():
 def build_graph(checkpointer=None):
     llm_with_tools = build_llm().bind_tools(TOOLS)
 
-    def agent(state: MessagesState):
-        messages = [SystemMessage(SYSTEM_PROMPT), *state["messages"]]
+    def agent(state: MessagesState, config: RunnableConfig):
+        system = SYSTEM_PROMPT
+        name = config["configurable"].get("customer_name")
+        if name:
+            system += f"\nThe logged-in customer's name is {name}.\n"
+        messages = [SystemMessage(system), *state["messages"]]
         return {"messages": [llm_with_tools.invoke(messages)]}
 
     builder = StateGraph(MessagesState)
@@ -42,9 +47,13 @@ def build_graph(checkpointer=None):
     return builder.compile(checkpointer=checkpointer or InMemorySaver())
 
 
-def run_config(token, thread_id):
-    """Per-session config: the token reaches the tools, never the LLM."""
+def run_config(token, thread_id, customer_name=None):
+    """Per-session config: the token reaches the tools, never the LLM.
+
+    The customer's name goes into the system prompt so the agent knows who
+    it is talking to.
+    """
     return {
-        "configurable": {"token": token, "thread_id": thread_id},
+        "configurable": {"token": token, "thread_id": thread_id, "customer_name": customer_name},
         "recursion_limit": config.RECURSION_LIMIT,
     }

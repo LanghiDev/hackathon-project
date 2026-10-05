@@ -72,7 +72,7 @@ def chat(body: ChatRequest, x_session_id: str = Header(default="")):
     if not message:
         raise HTTPException(status_code=400, detail="Mensagem vazia.")
 
-    cfg = run_config(session["token"], session["thread_id"])
+    cfg = run_config(session["token"], session["thread_id"], session["first_name"])
     before = len(graph.get_state(cfg).values.get("messages", []))
     try:
         result = graph.invoke({"messages": [HumanMessage(message)]}, cfg)

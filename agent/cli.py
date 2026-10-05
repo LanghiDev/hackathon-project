@@ -27,7 +27,7 @@ def main():
         return
 
     graph = build_graph()
-    cfg = run_config(session["access"], thread_id=str(uuid.uuid4()))
+    cfg = run_config(session["access"], str(uuid.uuid4()), session["first_name"])
     print(f"\nOlá, {session['first_name']}! Como posso ajudar?\n")
 
     seen = 0  # messages already shown; the result holds the whole thread history

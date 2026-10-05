@@ -42,7 +42,7 @@ def main():
     print(f"Modelo: {config.MODEL} | cliente: {session['customer_id']}\n")
     leaks = 0
     for number, question in enumerate(QUESTIONS, 1):
-        cfg = run_config(session["access"], thread_id=str(uuid.uuid4()))
+        cfg = run_config(session["access"], str(uuid.uuid4()), session["first_name"])
         result = graph.invoke({"messages": [HumanMessage(question)]}, cfg)
         messages = result["messages"]
         calls = [
