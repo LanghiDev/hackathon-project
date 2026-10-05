@@ -12,6 +12,7 @@ customer's data (the JWT travels in the run config, never through the LLM).
 | `prompts.py` | System prompt (language, no invented data, currencies, privacy rules) |
 | `graph.py` | LangGraph: `agent` node <-> `ToolNode`, memory via `InMemorySaver` |
 | `cli.py` | Terminal chat (`--debug` prints every tool call and result) |
+| `server.py` + `web/index.html` | Web chat; the JWT stays on the server, the browser only holds a session id |
 | `evals/run_questions.py` | Fixed questions, including prompt-injection attempts |
 
 ## Run
@@ -25,6 +26,7 @@ python3.14 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python cli.py --debug
 python evals/run_questions.py
+uvicorn server:app --port 8001   # web chat at http://localhost:8001
 ```
 
 Demo login (synthetic data): document `78481769`, birth date `1982-02-05`.
