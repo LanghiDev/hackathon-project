@@ -185,7 +185,9 @@ let sessionId = null;
 const $ = (id) => document.getElementById(id);
 
 function renderMarkdown(text) {
-  const html = DOMPurify.sanitize(marked.parse(text || ""));
+  // No images in model text: charts are drawn by the page, and an injected image
+  // URL could leak data to another site when the browser loads it.
+  const html = DOMPurify.sanitize(marked.parse(text || ""), { FORBID_TAGS: ["img"] });
   const box = document.createElement("div");
   box.innerHTML = html;
   box.querySelectorAll("table").forEach((table) => {
