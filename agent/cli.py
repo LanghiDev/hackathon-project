@@ -30,6 +30,7 @@ def main():
     cfg = run_config(session["access"], thread_id=str(uuid.uuid4()))
     print(f"\nOlá, {session['first_name']}! Como posso ajudar?\n")
 
+    seen = 0  # messages already shown; the result holds the whole thread history
     while True:
         try:
             question = input("Você: ").strip()
@@ -44,10 +45,14 @@ def main():
         except GraphRecursionError:
             print("Assistente: Não consegui concluir essa pergunta. Pode reformular?\n")
             continue
+        messages = result["messages"]
         if debug:
-            for message in result["messages"]:
+            # This turn's steps (question, tool calls, tool results); the
+            # final answer is printed once, below.
+            for message in messages[seen:-1]:
                 message.pretty_print()
-        print(f"Assistente: {result['messages'][-1].text}\n")
+        seen = len(messages)
+        print(f"Assistente: {messages[-1].text}\n")
 
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ MODEL = os.getenv("AGENT_MODEL", "claude-haiku-4-5")
 
 # The dataset ends on 2026-06-18, so the agent lives on that day.
 SIMULATED_TODAY = date(2026, 6, 18)
+HISTORY_START = date(2023, 6, 17)  # first transaction in the dataset
 DEFAULT_PERIOD_DAYS = 30
 
 # Max graph steps per question, so a tool-calling loop can't run up costs.

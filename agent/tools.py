@@ -37,9 +37,12 @@ def _api(config):
     return BankAPI(config["configurable"]["token"])
 
 
-def _period(start_date, end_date):
+def _period(start_date, end_date, default_start=None):
     end = date.fromisoformat(end_date) if end_date else settings.SIMULATED_TODAY
-    start = date.fromisoformat(start_date) if start_date else end - timedelta(days=settings.DEFAULT_PERIOD_DAYS)
+    if start_date:
+        start = date.fromisoformat(start_date)
+    else:
+        start = default_start or end - timedelta(days=settings.DEFAULT_PERIOD_DAYS)
     if start > end:
         raise ValueError("start_date must be on or before end_date.")
     return start, end
@@ -186,13 +189,13 @@ def declined_transactions(
     *,
     config: RunnableConfig,
 ) -> dict:
-    """The customer's declined transactions in a period, newest first, each with the decline reason.
+    """The customer's declined transactions, newest first, each with the decline reason.
 
-    Use for "why was my transaction declined?". Dates are ISO (YYYY-MM-DD) and
-    inclusive; when omitted the period is the last 30 days. If nothing is found,
-    try a wider period before concluding there are no declines.
+    Use for "why was my (last) transaction declined?". Dates are ISO
+    (YYYY-MM-DD) and inclusive; when start_date is omitted the whole history
+    is searched, so the most recent decline is found even if it is old.
     """
-    start, end = _period(start_date, end_date)
+    start, end = _period(start_date, end_date, default_start=settings.HISTORY_START)
     rows = _transactions_in(config, start, end, transaction_status="Declined")
     rows.sort(key=lambda tx: tx["transaction_date"], reverse=True)
     return {
