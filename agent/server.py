@@ -24,7 +24,7 @@ from graph import build_graph, run_config
 
 WEB_DIR = Path(__file__).resolve().parent / "web"
 
-app = FastAPI(title="Assistente financeiro")
+app = FastAPI(title="Finance assistant")
 graph = build_graph()
 sessions = {}  # session id -> {"token", "thread_id", "first_name"}
 
@@ -68,17 +68,17 @@ def do_logout(x_session_id: str = Header(default="")):
 def chat(body: ChatRequest, x_session_id: str = Header(default="")):
     session = sessions.get(x_session_id)
     if session is None:
-        raise HTTPException(status_code=401, detail="Sessão expirada. Entre novamente.")
+        raise HTTPException(status_code=401, detail="Session expired. Please sign in again.")
     message = body.message.strip()
     if not message:
-        raise HTTPException(status_code=400, detail="Mensagem vazia.")
+        raise HTTPException(status_code=400, detail="Empty message.")
 
     cfg = run_config(session["token"], session["thread_id"], session["first_name"])
     before = len(graph.get_state(cfg).values.get("messages", []))
     try:
         result = graph.invoke({"messages": [HumanMessage(message)]}, cfg)
     except GraphRecursionError:
-        return {"answer": "Não consegui concluir essa pergunta. Pode reformular?", "tools": [], "charts": []}
+        return {"answer": "I couldn't finish that question. Could you rephrase it?", "tools": [], "charts": []}
 
     new_messages = result["messages"][before:]
     tools = [

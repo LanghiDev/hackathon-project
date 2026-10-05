@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Assistente Financeiro</title>
+<title>Finance Assistant</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230f766e'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3E$%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -136,50 +136,49 @@
 
 <div id="login" class="login-wrap">
   <form class="card" id="login-form">
-    <div class="brand"><div class="logo">$</div><h1>Assistente Financeiro</h1></div>
-    <p class="sub">Pergunte sobre seus gastos, transações e contas.</p>
-    <label for="doc">Número do documento</label>
+    <div class="brand"><div class="logo">$</div><h1>Finance Assistant</h1></div>
+    <p class="sub">Ask about your spending, transactions and accounts.</p>
+    <label for="doc">Document number</label>
     <input id="doc" type="text" autocomplete="off" required>
-    <label for="dob">Data de nascimento</label>
+    <label for="dob">Date of birth</label>
     <input id="dob" type="date" required>
-    <button class="primary" id="login-btn" type="submit">Entrar</button>
-    <button class="link" type="button" id="demo-btn">Usar cliente de demonstração</button>
+    <button class="primary" id="login-btn" type="submit">Sign in</button>
+    <button class="link" type="button" id="demo-btn">Use demo customer</button>
     <div class="error" id="login-error"></div>
   </form>
 </div>
 
 <div id="chat" class="app hidden">
   <header>
-    <div class="brand"><div class="logo">$</div><h1 id="greeting">Olá</h1></div>
+    <div class="brand"><div class="logo">$</div><h1 id="greeting">Hi</h1></div>
     <div style="display:flex;align-items:center;gap:12px">
       <span class="who" id="model"></span>
-      <button class="ghost" id="logout-btn">Sair</button>
+      <button class="ghost" id="logout-btn">Sign out</button>
     </div>
   </header>
   <div class="messages" id="messages"></div>
   <div class="suggestions" id="suggestions"></div>
   <form class="composer" id="composer">
-    <input id="input" type="text" placeholder="Escreva sua pergunta..." autocomplete="off">
-    <button id="send-btn" type="submit">Enviar</button>
+    <input id="input" type="text" placeholder="Ask a question..." autocomplete="off">
+    <button id="send-btn" type="submit">Send</button>
   </form>
 </div>
 
 <script>
 const TOOL_LABELS = {
-  spending_summary: "Resumo de gastos",
-  list_transactions: "Transações",
-  declined_transactions: "Transações negadas",
-  get_my_accounts: "Contas e cartões",
-  show_spending_chart: "Gráfico de gastos",
+  spending_summary: "Spending summary",
+  list_transactions: "Transactions",
+  declined_transactions: "Declined transactions",
+  get_my_accounts: "Accounts and cards",
+  show_spending_chart: "Spending chart",
 };
 const SUGGESTIONS = [
-  "Mostre um gráfico dos meus gastos por categoria",
-  "Como foram meus gastos mês a mês em 2026?",
-  "Quanto gastei nos últimos 30 dias?",
-  "Qual foi meu maior gasto em junho?",
-  "Por que minha última transação foi negada?",
-  "Qual o saldo das minhas contas?",
-  "Mostre meus gastos por mês em 2026",
+  "Show me a chart of my spending by category",
+  "How did my spending change month by month in 2026?",
+  "How much did I spend in the last 30 days?",
+  "What was my biggest expense in June?",
+  "Why was my last transaction declined?",
+  "What are my account balances?",
 ];
 
 let sessionId = null;
@@ -198,27 +197,23 @@ function renderMarkdown(text) {
   return box;
 }
 
-const CATEGORY_LABELS = {
-  Food: "Alimentação", Transport: "Transporte", Services: "Serviços",
-  Entertainment: "Entretenimento", Health: "Saúde", Other: "Outros", Saque: "Saque",
-};
-const GROUP_TITLES = { category: "Gastos por categoria", month: "Gastos por mês", merchant: "Gastos por estabelecimento" };
+const GROUP_TITLES = { category: "Spending by category", month: "Spending by month", merchant: "Spending by merchant" };
 
 function money(value, currency) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency }).format(value);
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
 }
 
 function chartLabel(label, groupBy) {
   if (groupBy === "month") {
     const [year, month] = label.split("-").map(Number);
-    return new Date(year, month - 1, 1).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" });
+    return new Date(year, month - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
   }
-  return CATEGORY_LABELS[label] || label;
+  return label;
 }
 
 function formatDate(iso) {
-  const [year, month, day] = iso.split("-");
-  return `${day}/${month}/${year}`;
+  const [year, month, day] = iso.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function renderChart(spec) {
@@ -234,10 +229,10 @@ function renderChart(spec) {
     <div class="chart-title"></div>
     <div class="chart-meta"></div>
     <div class="chart-box"><canvas role="img"></canvas></div>
-    <details><summary>Ver dados</summary><div class="table-wrap"><table><tbody></tbody></table></div></details>`;
+    <details><summary>Show data</summary><div class="table-wrap"><table><tbody></tbody></table></div></details>`;
   card.querySelector(".chart-title").textContent = `${GROUP_TITLES[spec.group_by]} · ${spec.currency}`;
   card.querySelector(".chart-meta").textContent =
-    `${formatDate(spec.period.start)} a ${formatDate(spec.period.end)} · total ${money(spec.total, spec.currency)}`;
+    `${formatDate(spec.period.start)} – ${formatDate(spec.period.end)} · total ${money(spec.total, spec.currency)}`;
   card.querySelector(".chart-box").style.height = horizontal ? `${labels.length * 34 + 30}px` : "240px";
   const canvas = card.querySelector("canvas");
   canvas.setAttribute("aria-label", labels.map((l, i) => `${l}: ${money(values[i], spec.currency)}`).join("; "));
@@ -255,7 +250,7 @@ function renderChart(spec) {
     ticks: {
       color: color("--muted"),
       maxTicksLimit: 5,
-      callback: (v) => new Intl.NumberFormat("pt-BR", { notation: "compact" }).format(v),
+      callback: (v) => new Intl.NumberFormat("en-US", { notation: "compact" }).format(v),
     },
   };
   const categoryAxis = { grid: { display: false }, border: { color: color("--border") }, ticks: { color: color("--muted") } };
@@ -301,7 +296,7 @@ function addMessage(role, text, tools, charts) {
       [...new Set(tools)].forEach((name) => {
         const chip = document.createElement("span");
         chip.className = "tool";
-        chip.textContent = `consultou: ${TOOL_LABELS[name] || name}`;
+        chip.textContent = `used: ${TOOL_LABELS[name] || name}`;
         row.appendChild(chip);
       });
       el.appendChild(row);
@@ -322,7 +317,7 @@ async function postJSON(url, body) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(data.detail || "Algo deu errado. Tente novamente.");
+    const error = new Error(data.detail || "Something went wrong. Please try again.");
     error.status = response.status;
     throw error;
   }
@@ -344,11 +339,11 @@ $("login-form").addEventListener("submit", async (event) => {
       date_of_birth: $("dob").value,
     });
     sessionId = data.session_id;
-    $("greeting").textContent = `Olá, ${data.first_name.split(" ")[0]}`;
+    $("greeting").textContent = `Hi, ${data.first_name.split(" ")[0]}`;
     $("model").textContent = data.model;
     $("login").classList.add("hidden");
     $("chat").classList.remove("hidden");
-    addMessage("bot", `Olá, **${data.first_name}**! Posso ajudar com seus gastos, transações negadas e saldos. O que você quer saber?`);
+    addMessage("bot", `Hi, **${data.first_name}**! I can help with your spending, declined transactions and balances. What would you like to know?`);
     renderSuggestions();
     $("input").focus();
   } catch (error) {
@@ -380,7 +375,7 @@ async function send(text) {
   $("send-btn").disabled = true;
   const typing = addMessage("bot", "");
   typing.classList.add("typing");
-  typing.textContent = "Consultando seus dados...";
+  typing.textContent = "Looking up your data...";
   try {
     const data = await postJSON("/api/chat", { message: text });
     typing.remove();

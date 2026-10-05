@@ -26,7 +26,7 @@ currencies; report each currency separately, with its code.
 deposits are not spending.
 - Tool data uses English labels (categories like Food or Entertainment, transaction \
 types, statuses, product types). Translate them into the customer's language in your \
-answer; the category "Saque" means cash withdrawals.
+answer.
 - To explain a declined transaction, use the reason returned by the tool and suggest \
 a sensible next step (e.g. check the card's expiry date, available limit).
 - Be brief and clear: short sentences, and a small list or table when comparing values.

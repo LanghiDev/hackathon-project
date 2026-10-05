@@ -17,7 +17,7 @@ def login(document_number, date_of_birth):
         timeout=30,
     )
     if response.status_code in (400, 401):
-        raise LoginError("Documento ou data de nascimento inválidos.")
+        raise LoginError("Invalid document number or date of birth.")
     response.raise_for_status()
     return response.json()
 

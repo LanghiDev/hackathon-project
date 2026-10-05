@@ -23,10 +23,10 @@ SPENDING_TYPES = {"Purchase", "Payment", "Withdrawal"}
 
 # Q8: ISO 8583 response codes present in the dataset.
 DECLINE_REASONS = {
-    "51": "Saldo ou limite insuficiente",
-    "14": "Número de cartão inválido",
-    "54": "Cartão vencido",
-    "05": "Não autorizada pelo emissor",
+    "51": "Insufficient funds or credit limit",
+    "14": "Invalid card number",
+    "54": "Expired card",
+    "05": "Not authorized by the card issuer",
 }
 
 TransactionType = Literal["Purchase", "Payment", "Withdrawal", "Transfer", "Deposit", "Adjustment"]
@@ -59,16 +59,16 @@ def _transactions_in(config, start, end, **filters):
 
 def _category(tx):
     if tx["transaction_type"] == "Withdrawal":
-        return "Saque"
-    return tx["transaction_category"] or tx["merchant_category"] or "Sem categoria"
+        return "Cash withdrawal"
+    return tx["transaction_category"] or tx["merchant_category"] or "Uncategorized"
 
 
 def _decline_reason(tx):
     code = tx["response_code"]
     if not code:
-        return "Motivo não informado pelo processador"
+        return "Reason not provided by the processor"
     code = f"{int(float(code)):02d}"
-    return DECLINE_REASONS.get(code, f"Código de recusa {code}")
+    return DECLINE_REASONS.get(code, f"Decline code {code}")
 
 
 def _brief(tx):
@@ -111,7 +111,7 @@ def list_transactions(
     transactions (the same rule as spending_summary). Dates are ISO
     (YYYY-MM-DD) and inclusive; when omitted the period is the last 30 days.
     `category` is one of Food, Transport, Services, Entertainment, Health,
-    Other, Saque. Returns at most `limit` rows (max 50) plus the total matching.
+    Other, Cash withdrawal. Returns at most `limit` rows (max 50) plus the total matching.
     """
     start, end = _period(start_date, end_date)
     filters = {}
@@ -149,7 +149,7 @@ def spending_summary(
 ) -> dict:
     """Total spending of the customer in a period, grouped by category, month or merchant.
 
-    Spending = approved Purchase, Payment and Withdrawal ("Saque") transactions.
+    Spending = approved Purchase, Payment and Withdrawal ("Cash withdrawal") transactions.
     Totals are separate per currency and must never be added across currencies.
     Dates are ISO (YYYY-MM-DD) and inclusive; when omitted the period is the
     last 30 days.
@@ -194,7 +194,7 @@ def _months_between(start, end):
     return months
 
 
-MAX_CHART_BARS = 7  # past this, the smallest groups fold into "Demais"
+MAX_CHART_BARS = 7  # past this, the smallest groups fold into "All others"
 
 
 @tool
@@ -224,7 +224,7 @@ def show_spending_chart(
             ordered = sorted(groups.items(), key=lambda item: item[1][0], reverse=True)
             if len(ordered) > MAX_CHART_BARS:
                 rest = sum(total for _, (total, _) in ordered[MAX_CHART_BARS - 1:])
-                ordered = ordered[:MAX_CHART_BARS - 1] + [("Demais", (rest, 0))]
+                ordered = ordered[:MAX_CHART_BARS - 1] + [("All others", (rest, 0))]
             labels = [name for name, _ in ordered]
             values = [total for _, (total, _) in ordered]
             kind = "bar"
