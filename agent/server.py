@@ -7,13 +7,14 @@ holding the token and the conversation thread; the browser only gets a random
 session id, so it can't point the agent at someone else's thread.
 """
 
+import json
 import secrets
 import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import FileResponse
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.errors import GraphRecursionError
 from pydantic import BaseModel
 
@@ -77,11 +78,24 @@ def chat(body: ChatRequest, x_session_id: str = Header(default="")):
     try:
         result = graph.invoke({"messages": [HumanMessage(message)]}, cfg)
     except GraphRecursionError:
-        return {"answer": "Não consegui concluir essa pergunta. Pode reformular?", "tools": []}
+        return {"answer": "Não consegui concluir essa pergunta. Pode reformular?", "tools": [], "charts": []}
 
     new_messages = result["messages"][before:]
     tools = [
         call["name"]
         for m in new_messages if isinstance(m, AIMessage) for call in m.tool_calls
     ]
-    return {"answer": result["messages"][-1].text, "tools": tools}
+    return {"answer": result["messages"][-1].text, "tools": tools, "charts": _charts(new_messages)}
+
+
+def _charts(messages):
+    """Chart specs from this turn's show_spending_chart results (numbers computed by code)."""
+    charts = []
+    for m in messages:
+        if isinstance(m, ToolMessage) and m.name == "show_spending_chart" and m.status != "error":
+            try:
+                result = json.loads(m.content)
+            except (TypeError, ValueError):
+                continue
+            charts.extend({**chart, "period": result["period"]} for chart in result["charts"])
+    return charts

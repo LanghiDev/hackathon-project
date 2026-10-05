@@ -155,6 +155,19 @@ def spending_summary(
     last 30 days.
     """
     start, end = _period(start_date, end_date)
+    totals = {}
+    for currency, groups in _spending_groups(config, start, end, group_by).items():
+        ordered = sorted(groups.items(), key=lambda item: item[1][0], reverse=True)
+        totals[currency] = {
+            "total": str(sum(total for total, _ in groups.values())),
+            "count": sum(count for _, count in groups.values()),
+            "groups": [{group_by: name, "total": str(total), "count": count} for name, (total, count) in ordered],
+        }
+    return {"period": _period_info(start, end), "by_currency": totals}
+
+
+def _spending_groups(config, start, end, group_by):
+    """{currency: {group: [total, count]}} of approved spending (Q4), never mixing currencies."""
     rows = [
         tx for tx in _transactions_in(config, start, end, transaction_status="Approved")
         if tx["transaction_type"] in SPENDING_TYPES
@@ -170,16 +183,60 @@ def spending_summary(
         bucket = by_currency[tx["currency"]][key(tx)]
         bucket[0] += Decimal(tx["amount"])
         bucket[1] += 1
+    return by_currency
 
-    totals = {}
-    for currency, groups in by_currency.items():
-        ordered = sorted(groups.items(), key=lambda item: item[1][0], reverse=True)
-        totals[currency] = {
+
+def _months_between(start, end):
+    months, year, month = [], start.year, start.month
+    while (year, month) <= (end.year, end.month):
+        months.append(f"{year:04d}-{month:02d}")
+        year, month = (year + 1, 1) if month == 12 else (year, month + 1)
+    return months
+
+
+MAX_CHART_BARS = 7  # past this, the smallest groups fold into "Demais"
+
+
+@tool
+def show_spending_chart(
+    start_date: str | None = None,
+    end_date: str | None = None,
+    group_by: Literal["category", "month", "merchant"] = "category",
+    *,
+    config: RunnableConfig,
+) -> dict:
+    """Show the customer a chart of their spending, and get the numbers behind it.
+
+    Use when the customer asks for a chart, or when your answer compares three
+    or more values (categories, months, merchants). Not for a single number.
+    The chart is drawn from these exact numbers and shown below your message:
+    don't list every value again, highlight what stands out. Same spending rule
+    and period defaults as spending_summary; one chart per currency.
+    """
+    start, end = _period(start_date, end_date)
+    charts = []
+    for currency, groups in _spending_groups(config, start, end, group_by).items():
+        if group_by == "month":
+            labels = _months_between(start, end)
+            values = [groups[m][0] if m in groups else Decimal("0") for m in labels]
+            kind = "column"
+        else:
+            ordered = sorted(groups.items(), key=lambda item: item[1][0], reverse=True)
+            if len(ordered) > MAX_CHART_BARS:
+                rest = sum(total for _, (total, _) in ordered[MAX_CHART_BARS - 1:])
+                ordered = ordered[:MAX_CHART_BARS - 1] + [("Demais", (rest, 0))]
+            labels = [name for name, _ in ordered]
+            values = [total for _, (total, _) in ordered]
+            kind = "bar"
+        charts.append({
+            "currency": currency,
+            "group_by": group_by,
+            "kind": kind,
+            "labels": labels,
+            "values": [str(v) for v in values],
             "total": str(sum(total for total, _ in groups.values())),
-            "count": sum(count for _, count in groups.values()),
-            "groups": [{group_by: name, "total": str(total), "count": count} for name, (total, count) in ordered],
-        }
-    return {"period": _period_info(start, end), "by_currency": totals}
+        })
+    return {"period": _period_info(start, end), "charts": charts}
 
 
 @tool
@@ -228,4 +285,4 @@ def get_my_accounts(*, config: RunnableConfig) -> dict:
     }
 
 
-TOOLS = [list_transactions, spending_summary, declined_transactions, get_my_accounts]
+TOOLS = [list_transactions, spending_summary, show_spending_chart, declined_transactions, get_my_accounts]
