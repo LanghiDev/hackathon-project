@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finance Assistant</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230f766e'/%3E%3Ctext x='16' y='22' font-family='Arial' font-size='18' font-weight='bold' fill='white' text-anchor='middle'%3E$%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --surface: #ffffff;
+    --surface-2: #eef2f6;
+    --text: #17202a;
+    --muted: #5d6b79;
+    --border: #dde3ea;
+    --accent: #0f766e;
+    --accent-text: #ffffff;
+    --user-bubble: #0f766e;
+    --user-text: #ffffff;
+    --danger: #b42318;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 4px 16px rgba(16, 24, 40, .06);
+    --chart-bar: #2a78d6;
+    --chart-grid: #e8ecf0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1418;
+      --surface: #161e24;
+      --surface-2: #1e2830;
+      --text: #e6edf2;
+      --muted: #93a3b1;
+      --border: #2a3640;
+      --accent: #2dd4bf;
+      --accent-text: #052e2b;
+      --user-bubble: #134e4a;
+      --user-text: #e6fffb;
+      --danger: #f97066;
+      --shadow: none;
+      --chart-bar: #3987e5;
+      --chart-grid: #26313a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 Inter, system-ui, -apple-system, sans-serif;
+  }
+  button, input { font: inherit; }
+  .hidden { display: none !important; }
+
+  /* Login */
+  .login-wrap { min-height: 100%; display: grid; place-items: center; padding: 24px 16px; }
+  .card {
+    width: 100%; max-width: 380px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 16px; padding: 28px; box-shadow: var(--shadow);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .logo {
+    width: 32px; height: 32px; border-radius: 9px; background: var(--accent); color: var(--accent-text);
+    display: grid; place-items: center; font-weight: 600;
+  }
+  h1 { font-size: 20px; margin: 0; font-weight: 600; }
+  .sub { color: var(--muted); margin: 0 0 22px; font-size: 14px; }
+  label { display: block; font-size: 13px; font-weight: 500; margin: 14px 0 6px; }
+  input[type=text], input[type=date] {
+    width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); outline: none;
+  }
+  input:focus { border-color: var(--accent); }
+  .primary {
+    width: 100%; margin-top: 20px; padding: 11px; border: 0; border-radius: 10px;
+    background: var(--accent); color: var(--accent-text); font-weight: 600; cursor: pointer;
+  }
+  .primary:disabled { opacity: .6; cursor: default; }
+  .link { background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; font-size: 13px; margin-top: 12px; }
+  .error { color: var(--danger); font-size: 13px; margin-top: 12px; min-height: 18px; }
+
+  /* Chat */
+  .app { height: 100%; display: flex; flex-direction: column; max-width: 860px; margin: 0 auto; }
+  header {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  header .who { font-size: 13px; color: var(--muted); }
+  .ghost {
+    background: none; border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px;
+  }
+  .messages { flex: 1; overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; overflow-wrap: anywhere; }
+  .msg.user { align-self: flex-end; background: var(--user-bubble); color: var(--user-text); border-bottom-right-radius: 4px; }
+  .msg.bot { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .msg.bot p { margin: 0 0 8px; } .msg.bot p:last-child { margin-bottom: 0; }
+  .msg.bot ul, .msg.bot ol { margin: 4px 0 8px; padding-left: 20px; }
+  .table-wrap { overflow-x: auto; margin: 6px 0; }
+  .msg.bot table { border-collapse: collapse; font-size: 14px; }
+  .msg.bot th, .msg.bot td { border-bottom: 1px solid var(--border); padding: 6px 10px; text-align: left; white-space: nowrap; }
+  .msg.bot th { color: var(--muted); font-weight: 500; }
+  .tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tool { font-size: 12px; color: var(--muted); background: var(--surface-2); border-radius: 999px; padding: 2px 10px; }
+  .typing { color: var(--muted); font-style: italic; }
+  .msg.bot.has-chart { width: 85%; }
+  .chart-card { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .chart-title { font-weight: 600; font-size: 14px; }
+  .chart-meta { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+  .chart-box { position: relative; width: 100%; }
+  .chart-card details { margin-top: 6px; font-size: 13px; }
+  .chart-card summary { color: var(--muted); cursor: pointer; }
+  .suggestions { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px 10px; }
+  .chip {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer;
+  }
+  .chip:hover, .ghost:hover { border-color: var(--accent); }
+  form.composer { display: flex; gap: 8px; padding: 12px 16px 16px; border-top: 1px solid var(--border); }
+  form.composer input {
+    flex: 1; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); outline: none; min-width: 0;
+  }
+  form.composer button {
+    border: 0; border-radius: 12px; padding: 0 18px; background: var(--accent); color: var(--accent-text);
+    font-weight: 600; cursor: pointer;
+  }
+  form.composer button:disabled { opacity: .6; cursor: default; }
+  @media (max-width: 560px) { .msg { max-width: 92%; } .msg.bot.has-chart { width: 92%; } header .who { display: none; } }
+</style>
+</head>
+<body>
+
+<div id="login" class="login-wrap">
+  <form class="card" id="login-form">
+    <div class="brand"><div class="logo">$</div><h1>Finance Assistant</h1></div>
+    <p class="sub">Ask about your spending, transactions and accounts.</p>
+    <label for="doc">Document number</label>
+    <input id="doc" type="text" autocomplete="off" required>
+    <label for="dob">Date of birth</label>
+    <input id="dob" type="date" required>
+    <button class="primary" id="login-btn" type="submit">Sign in</button>
+    <button class="link" type="button" id="demo-btn">Use demo customer</button>
+    <div class="error" id="login-error"></div>
+  </form>
+</div>
+
+<div id="chat" class="app hidden">
+  <header>
+    <div class="brand"><div class="logo">$</div><h1 id="greeting">Hi</h1></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="who" id="model"></span>
+      <button class="ghost" id="logout-btn">Sign out</button>
+    </div>
+  </header>
+  <div class="messages" id="messages"></div>
+  <div class="suggestions" id="suggestions"></div>
+  <form class="composer" id="composer">
+    <input id="input" type="text" placeholder="Ask a question..." autocomplete="off">
+    <button id="send-btn" type="submit">Send</button>
+  </form>
+</div>
+
+<script>
+const TOOL_LABELS = {
+  spending_summary: "Spending summary",
+  list_transactions: "Transactions",
+  declined_transactions: "Declined transactions",
+  get_my_accounts: "Accounts and cards",
+  show_spending_chart: "Spending chart",
+};
+const SUGGESTIONS = [
+  "Show me a chart of my spending by category",
+  "How did my spending change month by month in 2026?",
+  "How much did I spend in the last 30 days?",
+  "What was my biggest expense in June?",
+  "Why was my last transaction declined?",
+  "What are my account balances?",
+];
+
+let sessionId = null;
+const $ = (id) => document.getElementById(id);
+
+function renderMarkdown(text) {
+  // No images in model text: charts are drawn by the page, and an injected image
+  // URL could leak data to another site when the browser loads it.
+  const html = DOMPurify.sanitize(marked.parse(text || ""), { FORBID_TAGS: ["img"] });
+  const box = document.createElement("div");
+  box.innerHTML = html;
+  box.querySelectorAll("table").forEach((table) => {
+    const wrap = document.createElement("div");
+    wrap.className = "table-wrap";
+    table.replaceWith(wrap);
+    wrap.appendChild(table);
+  });
+  return box;
+}
+
+const GROUP_TITLES = { category: "Spending by category", month: "Spending by month", merchant: "Spending by merchant" };
+
+function money(value, currency) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
+}
+
+function chartLabel(label, groupBy) {
+  if (groupBy === "month") {
+    const [year, month] = label.split("-").map(Number);
+    return new Date(year, month - 1, 1).toLocaleDateString("en-US", { month: "short", year: "2-digit" });
+  }
+  return label;
+}
+
+function formatDate(iso) {
+  const [year, month, day] = iso.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+function renderChart(spec) {
+  const css = getComputedStyle(document.documentElement);
+  const color = (name) => css.getPropertyValue(name).trim();
+  const labels = spec.labels.map((label) => chartLabel(label, spec.group_by));
+  const values = spec.values.map(Number);
+  const horizontal = spec.kind === "bar";
+
+  const card = document.createElement("div");
+  card.className = "chart-card";
+  card.innerHTML = `
+    <div class="chart-title"></div>
+    <div class="chart-meta"></div>
+    <div class="chart-box"><canvas role="img"></canvas></div>
+    <details><summary>Show data</summary><div class="table-wrap"><table><tbody></tbody></table></div></details>`;
+  card.querySelector(".chart-title").textContent = `${GROUP_TITLES[spec.group_by]} · ${spec.currency}`;
+  card.querySelector(".chart-meta").textContent =
+    `${formatDate(spec.period.start)} – ${formatDate(spec.period.end)} · total ${money(spec.total, spec.currency)}`;
+  card.querySelector(".chart-box").style.height = horizontal ? `${labels.length * 34 + 30}px` : "240px";
+  const canvas = card.querySelector("canvas");
+  canvas.setAttribute("aria-label", labels.map((l, i) => `${l}: ${money(values[i], spec.currency)}`).join("; "));
+  const tbody = card.querySelector("tbody");
+  labels.forEach((label, i) => {
+    const row = tbody.insertRow();
+    row.insertCell().textContent = label;
+    row.insertCell().textContent = money(values[i], spec.currency);
+  });
+
+  const valueAxis = {
+    beginAtZero: true,
+    grid: { color: color("--chart-grid") },
+    border: { display: false },
+    ticks: {
+      color: color("--muted"),
+      maxTicksLimit: 5,
+      callback: (v) => new Intl.NumberFormat("en-US", { notation: "compact" }).format(v),
+    },
+  };
+  const categoryAxis = { grid: { display: false }, border: { color: color("--border") }, ticks: { color: color("--muted") } };
+
+  // Chart.js needs the canvas in the DOM to size it, so build after insertion.
+  requestAnimationFrame(() => new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: color("--chart-bar"),
+        borderRadius: 4,
+        borderSkipped: "start",
+        maxBarThickness: 28,
+      }],
+    },
+    options: {
+      indexAxis: horizontal ? "y" : "x",
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => money(ctx.raw, spec.currency) } },
+      },
+      scales: horizontal ? { x: valueAxis, y: categoryAxis } : { x: categoryAxis, y: valueAxis },
+    },
+  }));
+  return card;
+}
+
+function addMessage(role, text, tools, charts) {
+  const el = document.createElement("div");
+  el.className = `msg ${role}`;
+  if (role === "bot") {
+    el.appendChild(renderMarkdown(text));
+    if (charts && charts.length) {
+      el.classList.add("has-chart");
+      charts.forEach((spec) => el.appendChild(renderChart(spec)));
+    }
+    if (tools && tools.length) {
+      const row = document.createElement("div");
+      row.className = "tools";
+      [...new Set(tools)].forEach((name) => {
+        const chip = document.createElement("span");
+        chip.className = "tool";
+        chip.textContent = `used: ${TOOL_LABELS[name] || name}`;
+        row.appendChild(chip);
+      });
+      el.appendChild(row);
+    }
+  } else {
+    el.textContent = text;
+  }
+  $("messages").appendChild(el);
+  $("messages").scrollTop = $("messages").scrollHeight;
+  return el;
+}
+
+async function postJSON(url, body) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Session-Id": sessionId || "" },
+    body: JSON.stringify(body),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.detail || "Something went wrong. Please try again.");
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+
+$("demo-btn").addEventListener("click", () => {
+  $("doc").value = "78481769";
+  $("dob").value = "1982-02-05";
+});
+
+$("login-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  $("login-error").textContent = "";
+  $("login-btn").disabled = true;
+  try {
+    const data = await postJSON("/api/login", {
+      document_number: $("doc").value,
+      date_of_birth: $("dob").value,
+    });
+    sessionId = data.session_id;
+    $("greeting").textContent = `Hi, ${data.first_name.split(" ")[0]}`;
+    $("model").textContent = data.model;
+    $("login").classList.add("hidden");
+    $("chat").classList.remove("hidden");
+    addMessage("bot", `Hi, **${data.first_name}**! I can help with your spending, declined transactions and balances. What would you like to know?`);
+    renderSuggestions();
+    $("input").focus();
+  } catch (error) {
+    $("login-error").textContent = error.message;
+  } finally {
+    $("login-btn").disabled = false;
+  }
+});
+
+function renderSuggestions() {
+  const box = $("suggestions");
+  box.innerHTML = "";
+  SUGGESTIONS.forEach((text) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "chip";
+    chip.textContent = text;
+    chip.addEventListener("click", () => send(text));
+    box.appendChild(chip);
+  });
+}
+
+async function send(text) {
+  text = text.trim();
+  if (!text || $("send-btn").disabled) return;
+  $("suggestions").innerHTML = "";
+  addMessage("user", text);
+  $("input").value = "";
+  $("send-btn").disabled = true;
+  const typing = addMessage("bot", "");
+  typing.classList.add("typing");
+  typing.textContent = "Looking up your data...";
+  try {
+    const data = await postJSON("/api/chat", { message: text });
+    typing.remove();
+    addMessage("bot", data.answer, data.tools, data.charts);
+  } catch (error) {
+    typing.remove();
+    addMessage("bot", error.message);
+    if (error.status === 401) setTimeout(logout, 1500);
+  } finally {
+    $("send-btn").disabled = false;
+    $("input").focus();
+  }
+}
+
+$("composer").addEventListener("submit", (event) => {
+  event.preventDefault();
+  send($("input").value);
+});
+
+async function logout() {
+  try { await postJSON("/api/logout", {}); } catch (_) {}
+  sessionId = null;
+  $("messages").innerHTML = "";
+  $("chat").classList.add("hidden");
+  $("login").classList.remove("hidden");
+}
+$("logout-btn").addEventListener("click", logout);
+</script>
+</body>
+</html>
